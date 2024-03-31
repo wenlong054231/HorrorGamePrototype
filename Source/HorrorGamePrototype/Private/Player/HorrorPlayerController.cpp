@@ -34,6 +34,8 @@ void AHorrorPlayerController::SetupInputComponent()
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 
 	EnhancedInputComponent->BindAction(CameraRotationAction, ETriggerEvent::Triggered, this, &AHorrorPlayerController::CameraRotation);
+	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AHorrorPlayerController::Move);
+
 }
 
 void AHorrorPlayerController::CameraRotation(const FInputActionValue& InputActionValue)
@@ -52,11 +54,25 @@ void AHorrorPlayerController::CameraRotation(const FInputActionValue& InputActio
 	NewRotation.Yaw += YawInput;
 
 	// Update the pitch (vertical rotation) based on mouse movement on the Y-axis
-	NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch - PitchInput, -90.0f, 90.0f); // Clamp the pitch to prevent flipping
+	NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch - PitchInput, -80.0f, 80.0f); // Clamp the pitch to prevent flipping
 
 	SetControlRotation(NewRotation);
 }
 
 void AHorrorPlayerController::Move(const FInputActionValue& InputActionValue)
 {
+	const FVector2D InputAxisVector = InputActionValue.Get<FVector2D>();
+
+	if(APawn* ControlledPawn = GetPawn<APawn>())
+	{
+		const FRotator Rotation = ControlledPawn->GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+		ControlledPawn->AddMovementInput(ForwardDirection, InputAxisVector.Y);
+		ControlledPawn->AddMovementInput(RightDirection, InputAxisVector.X);
+
+	}
 }
