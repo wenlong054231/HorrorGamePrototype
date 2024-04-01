@@ -13,5 +13,10 @@ UCLASS()
 class HORRORGAMEPROTOTYPE_API AEnemy : public ACharacterBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	AEnemy();
+
+protected:
+	virtual void BeginPlay() override;
 };
