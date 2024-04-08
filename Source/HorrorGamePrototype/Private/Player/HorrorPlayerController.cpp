@@ -5,6 +5,8 @@
 
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AHorrorPlayerController::AHorrorPlayerController()
 {
@@ -20,7 +22,7 @@ void AHorrorPlayerController::BeginPlay()
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
 	check(Subsystem);
 	Subsystem->AddMappingContext(HorrorContext, 0);
-
+	
 	bShowMouseCursor = false;
 
 	const FInputModeGameOnly InputModeData;
@@ -35,6 +37,8 @@ void AHorrorPlayerController::SetupInputComponent()
 
 	EnhancedInputComponent->BindAction(CameraRotationAction, ETriggerEvent::Triggered, this, &AHorrorPlayerController::CameraRotation);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AHorrorPlayerController::Move);
+	EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &AHorrorPlayerController::Sprint);
+	EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AHorrorPlayerController::SprintEnd);
 
 }
 
@@ -70,9 +74,38 @@ void AHorrorPlayerController::Move(const FInputActionValue& InputActionValue)
 
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
+		
 		ControlledPawn->AddMovementInput(ForwardDirection, InputAxisVector.Y);
 		ControlledPawn->AddMovementInput(RightDirection, InputAxisVector.X);
-
 	}
+}
+
+void AHorrorPlayerController::SetMaxWalkSpeed(float NewMaxWalkSpeed)
+{
+	if(APawn* ControlledPawn = GetPawn<APawn>())
+	{
+		if (const ACharacter* ControlledCharacter  = Cast<ACharacter>(ControlledPawn) )
+		{
+			if (UCharacterMovementComponent* CharacterMovement = ControlledCharacter ->GetCharacterMovement())
+			{
+				CharacterMovement->MaxWalkSpeed = NewMaxWalkSpeed;
+				float CurrentMaxWalkSpeed = CharacterMovement->MaxWalkSpeed;
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("Current Max Walk Speed: %.2f"), CurrentMaxWalkSpeed));
+			}
+		}
+	}
+}
+
+void AHorrorPlayerController::Sprint()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("Sprint")));
+
+	bIsSprinting = true;
+	SetMaxWalkSpeed(1000.0f);
+}
+
+void AHorrorPlayerController::SprintEnd()
+{
+	bIsSprinting = false;
+	SetMaxWalkSpeed(500.0f);
 }
